@@ -1,5 +1,62 @@
-# radio-transforma-pipeline
+# Rádio Transforma — AI Content Intelligence Pipeline
 
-AI content intelligence pipeline for Rádio Transforma.pt — in active development.
+[![Status](https://img.shields.io/badge/status-in%20development-yellow)](.)
+[![Python](https://img.shields.io/badge/python-3.11+-blue)](https://www.python.org/)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-*Full README coming in a subsequent commit.*
+A production-grade pipeline that transforms unstructured audio into a 
+semantically searchable, reusable knowledge base — built with 
+Eval-Driven Development as the first principle.
+
+> **Status:** Phase 0 in progress — golden dataset and eval harness being 
+> defined before any pipeline code is written.
+
+---
+
+## 📊 Results
+
+*Metrics will be published here as they are measured. No invented numbers — 
+every value is reproducible from the eval harness in `/evals`.*
+
+| Metric | Target | Current |
+|---|---|---|
+| Transcription accuracy (WER, PT-PT) | < 10% | *pending* |
+| RAG context precision | > 0.85 | *pending* |
+| RAG context recall | > 0.80 | *pending* |
+| Agent latency (p95) | < 5s | *pending* |
+| Cost per 1k queries | < $1.00 | *pending* |
+
+---
+
+## 🎯 Business Context
+
+**Rádio Transforma.pt** holds hundreds of hours of audio content — shows, 
+interviews, political commentary — that is currently inaccessible for search, 
+reuse, or editorial repurposing.
+
+**The problem:** unstructured audio, no searchability, no reuse, manual 
+editorial work.
+
+**The solution:** an end-to-end pipeline that ingests audio, transcribes it 
+(PT-PT), structures it semantically, stores it as a queryable knowledge base, 
+and exposes it through tool-calling agents for content generation and research.
+
+**The constraint:** the system must be *measurably correct* — not "looks 
+good in a demo." Every component is evaluated against a golden dataset.
+
+---
+
+## 🏗️ Architecture
+
+```mermaid
+graph TD
+    A[Raw Audio] -->|Ingestion| B[faster-whisper]
+    B -->|Transcripts| C[PydanticAI]
+    C -->|Structured Data| D[Supabase + pgvector]
+    D <-->|RAG| E[LangGraph Agents]
+    E -->|API| F[FastAPI]
+    F -->|Webhooks| G[n8n]
+    G -->|Deliverables| H[Newsletters, Digests, Alerts]
+    
+    I[Promptfoo + Langfuse] -.->|Eval & Trace| C
+    I -.->|Eval & Trace| E

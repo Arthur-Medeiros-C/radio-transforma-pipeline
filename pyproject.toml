@@ -1,0 +1,110 @@
+[project]
+name = "radio-transforma-pipeline"
+version = "0.1.0"
+description = "AI content intelligence pipeline for Rádio Transforma.pt"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+    { name = "Arthur Medeiros Conceição", email = "amc.cultura.mkt@gmail.com" }
+]
+keywords = ["ai", "rag", "langgraph", "automation", "eval-driven"]
+
+dependencies = [
+    # Web framework
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "pydantic>=2.9.0",
+    "pydantic-settings>=2.5.0",
+
+    # AI / LLM
+    "pydantic-ai>=0.0.14",
+    "langgraph>=0.2.30",
+    "langchain-core>=0.3.0",
+    "openai>=1.50.0",
+    "ollama>=0.3.3",
+
+    # Audio / Transcription
+    "faster-whisper>=1.0.3",
+    "ffmpeg-python>=0.2.0",
+
+    # Document extraction
+    "docling>=2.0.0",
+
+    # Data / Storage
+    "supabase>=2.9.0",
+    "pgvector>=0.3.0",
+    "psycopg[binary]>=3.2.0",
+    "pandas>=2.2.0",
+
+    # Infrastructure
+    "modal>=0.66.0",
+    "httpx>=0.27.0",
+
+    # Observability
+    "langfuse>=2.53.0",
+    "python-dotenv>=1.0.0",
+
+    # Utilities
+    "tenacity>=9.0.0",
+    "rich>=13.9.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=6.0.0",
+    "ruff>=0.7.0",
+    "mypy>=1.13.0",
+    "pre-commit>=4.0.0",
+]
+
+[tool.uv]
+package = true
+dev-dependencies = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=6.0.0",
+    "ruff>=0.7.0",
+    "mypy>=1.13.0",
+    "pre-commit>=4.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/radio_transforma"]
+
+# --- Ruff ---
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "I",
+    "B",
+    "UP",
+    "SIM",
+]
+ignore = ["E501"]
+
+# --- Pytest ---
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+asyncio_mode = "auto"
+addopts = "-ra --strict-markers"
+
+# --- MyPy ---
+[tool.mypy]
+python_version = "3.11"
+strict = true
+plugins = ["pydantic.mypy"]
+exclude = ["venv", ".venv", "build", "dist"]

@@ -38,7 +38,10 @@ data/
 *.mp3
 *.mp4
 *.m4a
-models/
+
+# ML model weights — anchored to repo root only.
+# This deliberately does NOT block src packages named "models".
+/models/
 
 # Test / Coverage
 .pytest_cache/

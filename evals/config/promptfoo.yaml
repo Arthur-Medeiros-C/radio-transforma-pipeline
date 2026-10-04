@@ -1,0 +1,29 @@
+description: "Rádio Transforma — Eval Harness (skeleton)"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Phase 0 — Skeleton configuration
+# ─────────────────────────────────────────────────────────────────────────────
+# The pipeline is not yet implemented. This configuration is intentionally
+# minimal and valid so the CI harness passes.
+#
+# Authoritative test cases live in ../golden_dataset.json.
+# As each phase is delivered, this config will grow to reference those cases:
+#
+#   Phase 1 → transcription evals (WER against manual transcripts)
+#   Phase 2 → extraction, retrieval, agent evals
+#
+# For now, a single sanity test confirms that promptfoo is wired and runnable.
+
+prompts:
+  - "{{input}}"
+
+providers:
+  - id: "echo"
+
+tests:
+  - description: "Sanity check — promptfoo harness is wired and runnable"
+    vars:
+      input: "sanity-check"
+    assert:
+      - type: javascript
+        value: "true"

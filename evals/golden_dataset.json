@@ -1,0 +1,231 @@
+{
+    "$schema_version": "0.1.0",
+    "project": "radio-transforma-pipeline",
+    "created_at": "2026-10-04",
+    "updated_at": "2026-10-04",
+    "status": "skeleton",
+    "description": "Golden dataset for the Rádio Transforma content intelligence pipeline. Source of truth for expected behaviour across all four eval types. Cases are added incrementally; placeholders document structure for cases pending real audio.",
+    "targets": {
+      "transcription": 5,
+      "extraction": 5,
+      "retrieval": 5,
+      "agent": 5,
+      "total": 20
+    },
+    "current": {
+      "transcription": 2,
+      "extraction": 2,
+      "retrieval": 2,
+      "agent": 2,
+      "total": 8
+    },
+    "cases": [
+      {
+        "id": "transcription-001",
+        "type": "transcription",
+        "status": "synthetic",
+        "phase": 1,
+        "description": "Short PT-PT political commentary clip (~45s). Tests base transcription accuracy on clean, single-speaker audio.",
+        "input": {
+          "audio_url": null,
+          "audio_path": null,
+          "language": "pt-PT",
+          "duration_seconds": 45,
+          "speakers": 1
+        },
+        "expected": {
+          "transcript": "Bom dia, é sexta-feira. Hoje vamos falar daquilo que parece estar a acontecer em Bruxelas, onde os líderes europeus continuam a discutir o novo pacote de reformas para a política agrícola comum. Aquilo que me parece mais relevante nisto tudo não são os números que se discutem, mas sim a mudança de fundo na forma como a Europa pensa a sua própria soberania alimentar.",
+          "word_count": 69,
+          "wer_threshold": 0.10
+        },
+        "metadata": {
+          "created_by": "Arthur Medeiros",
+          "reviewed": false,
+          "notes": "Synthetic content generated for pipeline testing. No real persons or statements referenced."
+        }
+      },
+      {
+        "id": "transcription-002",
+        "type": "transcription",
+        "status": "placeholder",
+        "phase": 1,
+        "description": "Real audio from Rádio Transforma archive — awaiting sample. Longer format with possible background music.",
+        "input": {
+          "audio_url": null,
+          "audio_path": null,
+          "language": "pt-PT",
+          "duration_seconds": null,
+          "speakers": null
+        },
+        "expected": {
+          "transcript": "PLACEHOLDER — to be filled with manual transcript from real archive audio.",
+          "word_count": null,
+          "wer_threshold": 0.10
+        },
+        "metadata": {
+          "created_by": "Arthur Medeiros",
+          "reviewed": false,
+          "notes": "Awaiting source audio from Rádio Transforma.pt. Once received, replace this placeholder with the manual transcript (ground truth)."
+        }
+      },
+      {
+        "id": "extraction-001",
+        "type": "extraction",
+        "status": "synthetic",
+        "phase": 2,
+        "description": "Extract topics, entities and sentiment from a synthetic PT-PT political commentary segment.",
+        "input": {
+          "text": "Bom dia, é sexta-feira. Hoje vamos falar daquilo que parece estar a acontecer em Bruxelas, onde os líderes europeus continuam a discutir o novo pacote de reformas para a política agrícola comum.",
+          "source_transcript_id": "transcription-001",
+          "language": "pt-PT"
+        },
+        "expected": {
+          "topics": [
+            "European politics",
+            "agricultural policy reform",
+            "food sovereignty"
+          ],
+          "entities": [
+            { "name": "Bruxelas", "type": "location" },
+            { "name": "política agrícola comum", "type": "policy" },
+            { "name": "Europa", "type": "geopolitical_entity" }
+          ],
+          "sentiment": "neutral_analytical",
+          "quotes": []
+        },
+        "metadata": {
+          "created_by": "Arthur Medeiros",
+          "reviewed": false,
+          "notes": "Schema is intentionally minimal. Fields will expand as real extraction needs emerge."
+        }
+      },
+      {
+        "id": "extraction-002",
+        "type": "extraction",
+        "status": "synthetic",
+        "phase": 2,
+        "description": "Extract a quotable line and its attributed context from a synthetic segment.",
+        "input": {
+          "text": "Aquilo que me parece mais relevante nisto tudo não são os números que se discutem, mas sim a mudança de fundo na forma como a Europa pensa a sua própria soberania alimentar. Durante décadas, o modelo foi de abertura e de dependência de cadeias globais. Hoje, o discurso mudou, e essa mudança é mais significativa do que qualquer valor específico em negociação.",
+          "source_transcript_id": "transcription-001",
+          "language": "pt-PT"
+        },
+        "expected": {
+          "topics": [
+            "food sovereignty",
+            "European strategic autonomy"
+          ],
+          "entities": [
+            { "name": "Europa", "type": "geopolitical_entity" }
+          ],
+          "sentiment": "neutral_analytical",
+          "quotes": [
+            {
+              "text": "a mudança de fundo na forma como a Europa pensa a sua própria soberania alimentar",
+              "position": "middle"
+            }
+          ]
+        },
+        "metadata": {
+          "created_by": "Arthur Medeiros",
+          "reviewed": false,
+          "notes": null
+        }
+      },
+      {
+        "id": "retrieval-001",
+        "type": "retrieval",
+        "status": "synthetic",
+        "phase": 2,
+        "description": "Semantic query targeting a specific policy topic within a single-segment corpus.",
+        "input": {
+          "query": "O que é que o comentador disse sobre política agrícola?",
+          "corpus": ["transcription-001", "extraction-001", "extraction-002"],
+          "top_k": 3
+        },
+        "expected": {
+          "relevant_chunk_ids": ["extraction-001::topics", "extraction-002::topics"],
+          "context_precision_min": 0.66,
+          "context_recall_min": 0.80
+        },
+        "metadata": {
+          "created_by": "Arthur Medeiros",
+          "reviewed": false,
+          "notes": "Thresholds set to skeleton level. Will be calibrated against real corpus once available."
+        }
+      },
+      {
+        "id": "retrieval-002",
+        "type": "retrieval",
+        "status": "synthetic",
+        "phase": 2,
+        "description": "Semantic query targeting a conceptual theme (not a named entity) — tests embedding quality beyond keyword matching.",
+        "input": {
+          "query": "Qual é a tese central do comentador?",
+          "corpus": ["transcription-001", "extraction-001", "extraction-002"],
+          "top_k": 3
+        },
+        "expected": {
+          "relevant_chunk_ids": ["extraction-002::quotes"],
+          "context_precision_min": 0.66,
+          "context_recall_min": 0.80
+        },
+        "metadata": {
+          "created_by": "Arthur Medeiros",
+          "reviewed": false,
+          "notes": null
+        }
+      },
+      {
+        "id": "agent-001",
+        "type": "agent",
+        "status": "synthetic",
+        "phase": 2,
+        "description": "Complex query requiring synthesis of multiple transcript segments, with citations required in the answer.",
+        "input": {
+          "query": "Resume a posição do comentador sobre soberania alimentar europeia, com citação direta.",
+          "available_transcripts": ["transcription-001", "extraction-001", "extraction-002"]
+        },
+        "expected": {
+          "answer_contains": [
+            "soberania alimentar",
+            "mudança de fundo"
+          ],
+          "citations_required": true,
+          "citation_format": "transcript_id::segment_id",
+          "must_cite": ["transcription-001"],
+          "latency_p95_ms_max": 5000,
+          "cost_per_query_usd_max": 0.001
+        },
+        "metadata": {
+          "created_by": "Arthur Medeiros",
+          "reviewed": false,
+          "notes": "Latency and cost thresholds are provisional — to be calibrated against actual pipeline measurements."
+        }
+      },
+      {
+        "id": "agent-002",
+        "type": "agent",
+        "status": "placeholder",
+        "phase": 2,
+        "description": "Cross-transcript synthesis requiring the real corpus. Awaiting ingest of multiple Rádio Transforma programs.",
+        "input": {
+          "query": "Quais foram os temas políticos mais recorrentes nos últimos três meses?",
+          "available_transcripts": []
+        },
+        "expected": {
+          "answer_contains": [],
+          "citations_required": true,
+          "citation_format": "transcript_id::segment_id",
+          "must_cite": [],
+          "latency_p95_ms_max": 5000,
+          "cost_per_query_usd_max": 0.001
+        },
+        "metadata": {
+          "created_by": "Arthur Medeiros",
+          "reviewed": false,
+          "notes": "Awaiting ingest of at least 3 months of real programs. Replace 'available_transcripts' with real IDs once available."
+        }
+      }
+    ]
+  }

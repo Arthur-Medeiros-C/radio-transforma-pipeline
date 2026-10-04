@@ -5,8 +5,7 @@ metadata (which model produced it, when, and — optionally — how accurate
 it was against a golden dataset).
 """
 
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -21,12 +20,10 @@ class TranscriptSegment(BaseModel):
     end: float = Field(..., gt=0, description="End time in seconds.")
     text: str = Field(..., min_length=1)
 
-    confidence: Optional[float] = Field(
+    confidence: float | None = Field(
         default=None, ge=0.0, le=1.0, description="Model confidence for this segment."
     )
-    speaker: Optional[str] = Field(
-        default=None, description="Speaker label, if diarised."
-    )
+    speaker: str | None = Field(default=None, description="Speaker label, if diarised.")
 
     @model_validator(mode="after")
     def _end_after_start(self) -> "TranscriptSegment":
@@ -44,20 +41,16 @@ class Transcript(BaseModel):
     audio_id: str = Field(..., min_length=1, description="References AudioSegment.id.")
     language: str = Field(default="pt-PT", pattern=r"^[a-z]{2}(-[A-Z]{2})?$")
 
-    model: str = Field(
-        ..., description="Transcription model name (e.g., 'faster-whisper')."
-    )
-    model_version: Optional[str] = Field(
-        default=None, description="Model version / size."
-    )
+    model: str = Field(..., description="Transcription model name (e.g., 'faster-whisper').")
+    model_version: str | None = Field(default=None, description="Model version / size.")
     segments: list[TranscriptSegment] = Field(default_factory=list)
 
-    wer: Optional[float] = Field(
+    wer: float | None = Field(
         default=None,
         ge=0.0,
         description="Word error rate, if measured against ground truth.",
     )
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     @property
     def full_text(self) -> str:

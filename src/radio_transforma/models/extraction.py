@@ -5,14 +5,13 @@ and quotable lines. All fields are deliberately minimal for V0.1 and will
 expand as real needs emerge.
 """
 
-from datetime import datetime, timezone
-from enum import Enum
-from typing import Optional
+from datetime import UTC, datetime
+from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class EntityType(str, Enum):
+class EntityType(StrEnum):
     """Known entity categories."""
 
     PERSON = "person"
@@ -53,8 +52,8 @@ class Quote(BaseModel):
         default="middle",
         description="Rough position in source: 'start', 'middle', 'end'.",
     )
-    start: Optional[float] = Field(default=None, ge=0)
-    end: Optional[float] = Field(default=None, gt=0)
+    start: float | None = Field(default=None, ge=0)
+    end: float | None = Field(default=None, gt=0)
 
 
 class ExtractedData(BaseModel):
@@ -68,4 +67,4 @@ class ExtractedData(BaseModel):
     entities: list[Entity] = Field(default_factory=list)
     quotes: list[Quote] = Field(default_factory=list)
     sentiment: str = Field(default="neutral")
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

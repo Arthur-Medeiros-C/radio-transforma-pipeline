@@ -5,8 +5,7 @@ high-level agent answers (`AgentResponse`). Both are pure outputs; the
 query itself is just a prompt with parameters.
 """
 
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -30,7 +29,7 @@ class RetrievalResult(BaseModel):
     chunk_id: str = Field(..., min_length=1)
     content: str = Field(..., min_length=1)
     score: float = Field(..., ge=0.0, le=1.0)
-    source_id: Optional[str] = Field(
+    source_id: str | None = Field(
         default=None, description="Transcript or audio ID this chunk belongs to."
     )
 
@@ -40,11 +39,9 @@ class Citation(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    source_id: str = Field(
-        ..., min_length=1, description="e.g., 'transcription-001'."
-    )
-    segment_id: Optional[str] = Field(default=None)
-    quote: Optional[str] = Field(default=None)
+    source_id: str = Field(..., min_length=1, description="e.g., 'transcription-001'.")
+    segment_id: str | None = Field(default=None)
+    quote: str | None = Field(default=None)
 
 
 class AgentResponse(BaseModel):
@@ -57,5 +54,5 @@ class AgentResponse(BaseModel):
     citations: list[Citation] = Field(default_factory=list)
     model: str = Field(...)
     latency_ms: int = Field(..., ge=0)
-    cost_usd: Optional[float] = Field(default=None, ge=0.0)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    cost_usd: float | None = Field(default=None, ge=0.0)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

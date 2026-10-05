@@ -14,24 +14,28 @@ from radio_transforma.config import Settings, get_settings
 
 
 class TestSettingsDefaults:
-    """Verify the defaults are safe and predictable."""
+    """Verify the defaults are safe and predictable.
+
+    `_env_file=None` disables loading the local `.env`, so these tests
+    measure the class defaults — not the developer's machine config.
+    """
 
     def test_default_environment_is_development(self) -> None:
-        settings = Settings()
+        settings = Settings(_env_file=None)
         assert settings.env == "development"
         assert settings.is_development is True
         assert settings.is_production is False
 
     def test_default_log_level_is_info(self) -> None:
-        settings = Settings()
+        settings = Settings(_env_file=None)
         assert settings.log_level == "INFO"
 
     def test_default_ollama_url_is_localhost(self) -> None:
-        settings = Settings()
+        settings = Settings(_env_file=None)
         assert settings.ollama_base_url == "http://localhost:11434"
 
     def test_secrets_default_to_empty_but_are_secret(self) -> None:
-        settings = Settings()
+        settings = Settings(_env_file=None)
         assert isinstance(settings.openrouter_api_key, SecretStr)
         assert settings.openrouter_api_key.get_secret_value() == ""
 

@@ -1,15 +1,14 @@
 # Rádio Transforma — AI Content Intelligence Pipeline
 
 [![Status](https://img.shields.io/badge/status-in%20development-yellow)](.)
-[![Python](https://img.shields.io/badge/python-3.11+-blue)](https://www.python.org/)
+[![Python](https://shields.io)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 A production-grade pipeline that transforms unstructured audio into a 
 semantically searchable, reusable knowledge base — built with 
 Eval-Driven Development as the first principle.
 
-> **Status:** Phase 0 in progress — golden dataset and eval harness being 
-> defined before any pipeline code is written.
+> **Status:** Phase 1 in progress — Ingestion phase active. Supabase client factory completed with 100% test coverage.
 
 ---
 
@@ -24,7 +23,7 @@ every value is reproducible from the eval harness in `/evals`.*
 | RAG context precision | > 0.85 | *pending* |
 | RAG context recall | > 0.80 | *pending* |
 | Agent latency (p95) | < 5s | *pending* |
-| Cost per 1k queries | < $1.00 | *pending* |
+| Cost per 1k queries | < \$1.00 | *pending* |
 
 ---
 
@@ -60,3 +59,12 @@ graph TD
     
     I[Promptfoo + Langfuse] -.->|Eval & Trace| C
     I -.->|Eval & Trace| E
+```
+
+---
+
+## 🔧 Engineering & Consulting Services
+
+The architecture applied in this pipeline is designed to be highly modular and production-ready. If your organization requires custom AI infrastructure—specifically focusing on extracting structured value from unstructured data, mitigating hallucinations via Eval-Driven Development, or building stateful agentic workflows:
+
+- Reach out via **[LinkedIn](https://www.linkedin.com/in/arthur-medeiros-conceição/)** or **[Email](mailto:amc.cultura.mkt@gmail.com)** to discuss your systems architecture and operational bottlenecks.

@@ -1,7 +1,7 @@
 # Rádio Transforma — AI Content Intelligence Pipeline
 
 [![Status](https://img.shields.io/badge/status-in%20development-yellow)](.)
-[![Python](https://shields.io)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/python-3.11.9-blue.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 A production-grade pipeline that transforms unstructured audio into a 

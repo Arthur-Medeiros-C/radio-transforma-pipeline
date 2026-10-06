@@ -9,11 +9,17 @@ from radio_transforma.storage.supabase_client import (
     get_supabase_client,
     reset_supabase_client,
 )
+from radio_transforma.storage.transcript_repository import (
+    TranscriptRepository,
+    TranscriptRepositoryError,
+)
 
 __all__ = [
     "AudioRepository",
     "AudioRepositoryError",
     "SupabaseClientError",
+    "TranscriptRepository",
+    "TranscriptRepositoryError",
     "get_supabase_client",
     "reset_supabase_client",
 ]

@@ -36,6 +36,21 @@ AI Automation Engineer. The quality bar is not "works in a demo" — it is
 - Each module is testable in isolation before integration.
 - No module advances before the previous one has green tests.
 
+**Regras operacionais (adicionadas 2026-10-06 após incidentes):**
+
+- **Convenção de testes:** unit tests vivem em `tests/unit/`. Integration tests
+  (rede real, SDKs live, LLMs) vivem em `tests/integration/` com marcador
+  `@pytest.mark.integration` e não correm em CI por omissão. Evals vivem em
+  `evals/` na raiz, geridos pelo Promptfoo — não são pytest.
+- **Cobertura 100% por módulo é critério de bloco, não de sorte.** Cada ramo
+  defensivo (`try/except`, validações, fallbacks) tem pelo menos um teste.
+- **Antes de qualquer `git commit --amend`:** correr `git status`. Se o commit
+  alvo já está em `origin/main`, **não se emenda** — faz-se um commit novo por
+  cima. `--amend` só é permitido no commit ainda não pusheado da sessão atual.
+- **Nunca `git push --force`.** Apenas `--force-with-lease`, e só se houver
+  razão documentada (ex.: amend local antes de push).
+- **Comando de verificação canónico (correr antes de cada commit):**
+
 ### 1.4 Four-phase structure
 
 | Phase | Responsibility | Stack |
@@ -167,6 +182,18 @@ Location: `evals/config/promptfoo.yaml`
 - Runs in CI as sanity check
 - Will expand per phase
 
+### 2.8 Test & coverage conventions
+
+- **Localização:** todos os unit tests em `tests/unit/`.
+- **Cobertura exigida:** 100% por módulo antes do commit.
+- **Mocking:** preferir `MagicMock` sobre `pytest-mock`. Fixtures locais por
+  ficheiro de teste; sem conftest global até haver duplicação real.
+- **Ficheiros de teste acompanham o módulo:** `audio_repository.py` ↔
+  `tests/unit/test_audio_repository.py`.
+- **Supabase SDK compatibility:** o cliente `supabase-py` já devolveu
+  respostas como `dict` e como objeto em versões diferentes. Testes cobrem
+  ambos os ramos em `_data()` (ver `transcript_repository.py`).
+
 ---
 
 ## 3. ARCHITECTURAL DECISIONS (5 ADRs)
@@ -227,17 +254,48 @@ Full detail in `docs/adr/`.
 - **7 testes unitários, todos com mocks, cobertura 100%.**
 - CI verde.
 
-### Block 2 — `src/radio_transforma/storage/audio_repository.py`
+### Block 2 — `src/radio_transforma/storage/audio_repository.py` ✅ DONE
 
-- **Responsabilidade:** upload/download de áudio para Supabase Storage; signed URLs.
-- **Fora do escopo:** tabelas Postgres, validação de conteúdo, bucket creation (setup manual).
+- Commit: `c36ca3a` — `feat(storage): add AudioRepository for Supabase Storage`
+- Interface: `upload`, `download`, `create_signed_url`, `exists`, `delete`.
+- `AudioRepositoryError(RuntimeError)` como excepção de domínio.
+- Validação estrita de path (relativo, sem `..`, não vazio).
+- Compatível com múltiplas formas de resposta de signed URL
+  (`signedURL` / `signed_url` / `signedUrl`).
+- **32 testes unitários, 100% de cobertura no módulo.**
+- **Fora do escopo:** bucket provisioning, validação de conteúdo,
+  metadata em Postgres. Bucket `audio` é criado manualmente na consola Supabase.
+- CI verde.
+
+### Block 3 — `src/radio_transforma/storage/transcript_repository.py` ✅ DONE
+
+- Commit: `3d6b3d0` — `feat(storage): add TranscriptRepository for Postgres (Supabase)`
+- Esquema relacional **normalizado** (decisão B):
+  - `transcripts` (id, audio_id, language, model, wer, created_at)
+  - `transcript_segments` (id, transcript_id, position, start_s, end_s, text, confidence)
+  - FK `transcript_id` com `ON DELETE CASCADE`; `UNIQUE (transcript_id, position)`;
+    `CHECK (end_s > start_s)`.
+- Esquema versionado em `docs/schema/001_transcripts.sql`. Aplicação manual
+  na consola Supabase (sem migrações automáticas nesta fase).
+- Interface: `save`, `get`, `list_for_audio`, `delete`.
+- `TranscriptRepositoryError(RuntimeError)` como excepção de domínio.
+- **Rollback best-effort:** se o batch insert de segmentos falhar, o
+  transcript-pai é removido. Não há transação cross-request no `supabase-py`.
+- **26 testes unitários, 100% de cobertura no módulo.**
+- **Fora do escopo:** embeddings (Fase 2), lógica de transcrição
+  (`TranscriptionService`), audio blobs (`AudioRepository`).
+- CI verde.
+
+### Block 4 — `src/radio_transforma/transcription/service.py` (NEXT)
+
+- **Responsabilidade:** transcrever `AudioSegment` → `Transcript` usando
+  faster-whisper (`large-v3`), com isolamento do modelo (lazy loading) e
+  injeção de dependência para testabilidade.
+- **Fora do escopo:** download do áudio (usa `AudioRepository`),
+  persistência (usa `TranscriptRepository`), Modal wrapper (Block 5).
 - **Interface pública (aproximada):**
 
   ```python
-  class AudioRepository:
-      def __init__(self, client: Client, bucket: str = "audio"): ...
-      def upload(self, path: str, data: bytes, *, content_type: str) -> str: ...
-      def download(self, path: str) -> bytes: ...
-      def create_signed_url(self, path: str, *, expires_in: int = 3600) -> str: ...
-      def exists(self, path: str) -> bool: ...
-      def delete(self, path: str) -> None: ...
+  class TranscriptionService:
+      def __init__(self, model_factory: Callable[[], WhisperModel] | None = None): ...
+      def transcribe(self, audio_path: Path, *, language: str = "pt-PT") -> Transcript: ...

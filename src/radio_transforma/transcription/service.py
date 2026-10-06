@@ -49,6 +49,11 @@ class TranscriptionService:
         self._model_name = model_name
         self._model: WhisperModel | None = None
 
+    @property
+    def model_name(self) -> str:
+        """Identifier of the model this service was configured with."""
+        return self._model_name
+
     # ------------------------------------------------------------------ #
     # Public API                                                         #
     # ------------------------------------------------------------------ #

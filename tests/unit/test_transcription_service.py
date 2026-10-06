@@ -268,3 +268,13 @@ def test_transcribe_rejects_non_path() -> None:
     service = TranscriptionService(model_factory=MagicMock())
     with pytest.raises(TypeError):
         service.transcribe("a-1", "not/a/path")  # type: ignore[arg-type]
+
+
+def test_model_name_property_returns_configured_model(audio_file: Path) -> None:
+    service = TranscriptionService(model_factory=MagicMock(), model_name="medium")
+    assert service.model_name == "medium"
+
+
+def test_model_name_property_defaults_to_large_v3() -> None:
+    service = TranscriptionService(model_factory=MagicMock())
+    assert service.model_name == DEFAULT_MODEL_NAME

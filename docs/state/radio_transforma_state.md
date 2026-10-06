@@ -1,8 +1,11 @@
 # radio_transforma_state.md
 
-> Ponto de restauro consolidado. Última actualização: 2026-10-05.
+> Ponto de restauro consolidado. Última actualização: 2026-10-06.
 > Colar como primeira mensagem em qualquer sessão de retoma.
 > Guardado em `docs/state/` — versionado com o código.
+>
+> **Living document.** Este ficheiro reflecte o último commit verde em `main`.
+> Se está desactualizado, é bug. Actualiza antes de continuar.
 
 ---
 
@@ -29,27 +32,42 @@ AI Automation Engineer. The quality bar is not "works in a demo" — it is
   against the harness. If it does not improve the metric, it does not ship.
 - Metrics are published in the README — not hidden in a notebook.
 
-### 1.3 Modularização Extrema
+### 1.3 Modularização Extrema & regras operacionais
 
 - One module per responsibility. One commit per logical unit.
-- **No "big bang" commits.** Every commit is small, verifiable, and passes CI.
+- **No "big bang" commits.** Every commit is small, verifiable, passes CI.
 - Each module is testable in isolation before integration.
 - No module advances before the previous one has green tests.
 
-**Regras operacionais (adicionadas 2026-10-06 após incidentes):**
+**Regras operacionais (codificadas após incidentes reais):**
 
-- **Convenção de testes:** unit tests vivem em `tests/unit/`. Integration tests
-  (rede real, SDKs live, LLMs) vivem em `tests/integration/` com marcador
-  `@pytest.mark.integration` e não correm em CI por omissão. Evals vivem em
-  `evals/` na raiz, geridos pelo Promptfoo — não são pytest.
+- **Convenção de testes:** unit tests em `tests/unit/`. Integration tests
+  (rede real, SDKs live, LLMs) em `tests/integration/` com marcador
+  `@pytest.mark.integration`, não correm em CI por omissão. Evals em `evals/`
+  na raiz, geridos pelo Promptfoo — não são pytest.
 - **Cobertura 100% por módulo é critério de bloco, não de sorte.** Cada ramo
   defensivo (`try/except`, validações, fallbacks) tem pelo menos um teste.
 - **Antes de qualquer `git commit --amend`:** correr `git status`. Se o commit
-  alvo já está em `origin/main`, **não se emenda** — faz-se um commit novo por
-  cima. `--amend` só é permitido no commit ainda não pusheado da sessão atual.
-- **Nunca `git push --force`.** Apenas `--force-with-lease`, e só se houver
-  razão documentada (ex.: amend local antes de push).
-- **Comando de verificação canónico (correr antes de cada commit):**
+  alvo já está em `origin/main`, **não se emenda** — faz-se commit novo por
+  cima. `--amend` só é permitido no commit ainda não pusheado da sessão actual.
+- **Nunca `git push --force`.** Apenas `--force-with-lease`, e só com razão
+  documentada (ex.: amend local antes de push).
+- **Editar ficheiros grandes:** preferir substituição integral do ficheiro a
+  "substituir a secção X". Menos margem para falhas parciais silenciosas.
+- **Pager do Git em Windows:** `git config --global core.pager ""` ou usar
+  `git --no-pager <cmd>` para evitar ficar preso no `less`.
+- **Verificação mecânica de números:** sempre que este ficheiro citar
+  contagens de testes, SHAs, ou totais de commits, o número é lido do output
+  real do `pytest`/`git log` — não copiado de mensagens de commit.
+
+**Comando de verificação canónico (correr antes de cada commit):**
+
+```bash
+ruff format src tests; ruff check src tests; ruff format --check src tests; pytest tests/unit --cov=src/radio_transforma --cov-report=term-missing
+```
+
+Só commitar se: `All checks passed!`, `NN files already formatted`, `N passed`,
+`TOTAL 100%`.
 
 ### 1.4 Four-phase structure
 
@@ -62,7 +80,7 @@ AI Automation Engineer. The quality bar is not "works in a demo" — it is
 
 ---
 
-## 2. PHASE 0 — COMPLETE (17 COMMITS)
+## 2. PHASE 0 — COMPLETE
 
 ### 2.1 Repository
 
@@ -70,6 +88,7 @@ AI Automation Engineer. The quality bar is not "works in a demo" — it is
 - **Visibility:** Public
 - **Local path:** `C:\Users\arthu\Projects\radio-transforma-pipeline`
 - **Branch:** `main`
+- **Último commit verde:** `d236f40` — `feat(ingestion): add IngestionOrchestrator`
 
 ### 2.2 Commit log (chronological)
 
@@ -93,10 +112,18 @@ AI Automation Engineer. The quality bar is not "works in a demo" — it is
 16. `docs(contracts): add data contracts documentation and flow map`
 17. `docs: add case study skeleton`
 
-**Phase 1 (18–19):**
+**Phase 1 (18–27):**
 
 18. `test(config): make defaults tests hermetic against local .env`
 19. `feat(storage): add Supabase client factory with typed settings` — **Block 1 ✅**
+20. `docs(state): add consolidated state document to repository`
+21. `docs: add consulting services and contact links to README`
+22. `docs: fix python badge image link`
+23. `feat(storage): add AudioRepository for Supabase Storage` — **Block 2 ✅**
+24. `feat(storage): add TranscriptRepository for Postgres (Supabase)` — **Block 3 ✅**
+25. `docs(state): record Phase 1 blocks 2 and 3 as done`
+26. `feat(transcription): add TranscriptionService with faster-whisper` — **Block 4 ✅**
+27. `feat(ingestion): add IngestionOrchestrator (audio → transcript)` — **Block 5 ✅**
 
 **Historical failures are preserved intentionally** — they document real
 problem-solving. They are part of the engineering narrative.
@@ -116,7 +143,7 @@ problem-solving. They are part of the engineering narrative.
 - Runs only if `evals/config/promptfoo.yaml` exists
 - Currently runs the sanity test
 
-**Status:** Green on commit `47ceb66` (last).
+**Status:** Green on `d236f40`.
 
 ### 2.4 Stack (locked)
 
@@ -163,7 +190,12 @@ Location: `src/radio_transforma/models/`
 **All contracts:** frozen (immutable), `extra="forbid"`, validated at
 construction, timezone-aware timestamps.
 
-**Test coverage:** 64 unit tests, all green in CI.
+**Field notes:**
+- `Transcript` requires: `id`, `audio_id`, `language`, `model`, `created_at`,
+  `segments` (tuple). Optional: `wer`.
+- `TranscriptSegment` requires: `id`, `start`, `end`, `text`. Optional: `confidence`.
+
+**Test coverage:** 180 unit tests, all green in CI, `TOTAL 100%`.
 
 ### 2.6 Golden dataset (skeleton)
 
@@ -193,6 +225,14 @@ Location: `evals/config/promptfoo.yaml`
 - **Supabase SDK compatibility:** o cliente `supabase-py` já devolveu
   respostas como `dict` e como objeto em versões diferentes. Testes cobrem
   ambos os ramos em `_data()` (ver `transcript_repository.py`).
+
+### 2.9 Database schema
+
+Location: `docs/schema/`
+
+- `001_transcripts.sql` — `transcripts` + `transcript_segments`, FK cascade,
+  `UNIQUE (transcript_id, position)`, `CHECK (end_s > start_s)`. Aplicação
+  manual na consola Supabase (sem migrações automáticas nesta fase).
 
 ---
 
@@ -246,12 +286,12 @@ Full detail in `docs/adr/`.
 
 - Commit: `47ceb66` — `feat(storage): add Supabase client factory with typed settings`
 - Factory memoizada com `@lru_cache(maxsize=1)`.
-- Lê config via `get_settings()` (já existente desde Phase 0).
+- Lê config via `get_settings()`.
 - Preferência de chave: `service_role` → fallback `anon`.
 - `SecretStr.get_secret_value().strip()` para extracção segura.
 - `SupabaseClientError(RuntimeError)` como excepção de domínio.
 - `reset_supabase_client()` para isolamento de testes.
-- **7 testes unitários, todos com mocks, cobertura 100%.**
+- **7 testes unitários, 100% de cobertura.**
 - CI verde.
 
 ### Block 2 — `src/radio_transforma/storage/audio_repository.py` ✅ DONE
@@ -262,7 +302,7 @@ Full detail in `docs/adr/`.
 - Validação estrita de path (relativo, sem `..`, não vazio).
 - Compatível com múltiplas formas de resposta de signed URL
   (`signedURL` / `signed_url` / `signedUrl`).
-- **32 testes unitários, 100% de cobertura no módulo.**
+- **36 testes unitários, 100% de cobertura no módulo.**
 - **Fora do escopo:** bucket provisioning, validação de conteúdo,
   metadata em Postgres. Bucket `audio` é criado manualmente na consola Supabase.
 - CI verde.
@@ -281,21 +321,99 @@ Full detail in `docs/adr/`.
 - `TranscriptRepositoryError(RuntimeError)` como excepção de domínio.
 - **Rollback best-effort:** se o batch insert de segmentos falhar, o
   transcript-pai é removido. Não há transação cross-request no `supabase-py`.
-- **26 testes unitários, 100% de cobertura no módulo.**
+- **24 testes unitários, 100% de cobertura no módulo.**
 - **Fora do escopo:** embeddings (Fase 2), lógica de transcrição
   (`TranscriptionService`), audio blobs (`AudioRepository`).
 - CI verde.
 
-### Block 4 — `src/radio_transforma/transcription/service.py` (NEXT)
+### Block 4 — `src/radio_transforma/transcription/service.py` ✅ DONE
 
-- **Responsabilidade:** transcrever `AudioSegment` → `Transcript` usando
-  faster-whisper (`large-v3`), com isolamento do modelo (lazy loading) e
-  injeção de dependência para testabilidade.
-- **Fora do escopo:** download do áudio (usa `AudioRepository`),
-  persistência (usa `TranscriptRepository`), Modal wrapper (Block 5).
-- **Interface pública (aproximada):**
+- Commit: `858db6c` — `feat(transcription): add TranscriptionService with faster-whisper`
+- API: `transcribe(audio_id, audio_path, *, language='pt-PT') -> Transcript`.
+- **Dependency Injection:** `model_factory: Callable[[], WhisperModel]` é
+  injectável; default usa `faster_whisper.WhisperModel` com import lazy.
+- **Lazy Loading:** modelo carregado só na primeira chamada, reutilizado
+  em chamadas subsequentes via `self._model`.
+- `model_name` property exposta para o orquestrador usar na idempotência.
+- Confiança derivada de `avg_logprob` via `exp()`, cortada a [0, 1].
+- Segmentos com texto vazio são descartados; resultado vazio levanta
+  `TranscriptionServiceError`.
+- `TranscriptionServiceError(RuntimeError)` como excepção de domínio.
+- **29 testes unitários, 100% de cobertura no módulo.**
+- **Fora do escopo:** download de áudio (`AudioRepository`), persistência
+  (`TranscriptRepository`), Modal wrapper (Block 6).
+- CI verde.
 
-  ```python
-  class TranscriptionService:
-      def __init__(self, model_factory: Callable[[], WhisperModel] | None = None): ...
-      def transcribe(self, audio_path: Path, *, language: str = "pt-PT") -> Transcript: ...
+### Block 5 — `src/radio_transforma/ingestion/orchestrator.py` ✅ DONE
+
+- Commit: `d236f40` — `feat(ingestion): add IngestionOrchestrator (audio → transcript)`
+- **Walking skeleton da Fase 1.**
+- Fluxo end-to-end: `idempotency check → upload (if missing) → transcribe → persist`.
+- Idempotente em `(audio_id, language, transcriber.model_name)`: chamada
+  repetida devolve o transcript existente sem refazer trabalho. Transcripts
+  órfãos (0 segmentos) são ignorados e recriados.
+- `IngestionError(RuntimeError)` carrega `.stage ∈ {validate, idempotency,
+  upload, transcribe, persist}` e `.audio_id`. **Sem retry automático** — a
+  política de retry é do caller (n8n, Modal, CLI). Não é uma saga: não há
+  compensação de passos anteriores, apenas classificação da falha.
+- **Sem cleanup em falha:** objecto no bucket e ficheiro local preservados
+  para retry. Único cleanup é o rollback best-effort já existente no
+  `TranscriptRepository.save`.
+- Content-type inferido pelo sufixo; sufixos desconhecidos caem para
+  `application/octet-stream`.
+- **27 testes unitários, 100% de cobertura no módulo.**
+- **Fora do escopo:** retry policy (tenacity), checkpoint persistente,
+  Modal wrapper (Block 6), tracing Langfuse (Block 7).
+- CI verde.
+
+### Block 6 — NEXT (a decidir)
+
+Candidatos, em ordem de recomendação:
+
+1. **CLI entrypoint** (`src/radio_transforma/cli.py`) — `python -m radio_transforma ingest <file>`,
+   liga Settings → SupabaseClient → AudioRepository → TranscriptionService →
+   TranscriptRepository → IngestionOrchestrator. Primeira execução real
+   end-to-end, primeira linha no Postgres real. **Sem isto, o Modal não tem
+   nada para envelopar e o EDD não tem dados reais.**
+2. **Eval harness com dados reais** — expandir `evals/golden_dataset.json`
+   com transcrições reais da Rádio Transforma. Correr `promptfoo` contra o
+   `TranscriptionService`. Primeira medição publicável.
+3. **Modal wrapper** (`src/radio_transforma/transcription/modal_app.py`) —
+   serverless GPU conforme ADR-002. Só faz sentido quando (1) existir.
+
+---
+
+## 5. BACKLOG (fora da Fase 1, registado para não esquecer)
+
+- **Retry automático** com `tenacity` sobre `stage="transcribe"` (3 tentativas,
+  backoff exponencial). Commit curto, quando doer.
+- **Tabela `ingestion_jobs`** para checkpoint persistente — evita re-transcrição
+  quando o `persist` falha após transcrição bem-sucedida. Não vale o custo
+  até o pipeline correr em volume.
+- **Migrações automáticas** (Alembic ou Supabase migrations) quando o número
+  de ficheiros em `docs/schema/` passar de 3.
+- **Tracing Langfuse** no `IngestionOrchestrator` (Block 7) — emitir spans
+  por stage para observar latência real por etapa em produção.
+- **Compensação real (Saga)** — se o volume crescer ao ponto de a re-transcrição
+  ser proibitiva, introduzir compensação explícita (rollback de upload). Hoje
+  não vale; a idempotência cobre 90% dos casos de retry.
+
+---
+
+## 6. LESSONS LEARNED (narrativa de engenharia)
+
+Registo das dores reais, para o documento evoluir com o projecto:
+
+- **Amend em commit já pusheado** → aprendeu-se a regra `git status` antes de
+  qualquer `--amend`. Commit `f61c40d` documenta o incidente.
+- **`ruff format` faz parte da escrita do bloco**, não da verificação. Depois
+  de emitir código, correr `ruff format src tests` **antes** de `ruff check`.
+- **Cobertura 100% é critério de bloco**, não de sorte. Cada ramo defensivo
+  (`try/except`, validações, fallbacks) tem pelo menos um teste. O `_data()`
+  do `transcript_repository.py` teve 3 ramos e inicialmente só 1 estava coberto.
+- **Ficheiros de estado devem ser substituídos inteiros**, não editados por
+  secção. Um bloco multi-secção editado parcialmente deixa o documento
+  inconsistente sem aviso.
+- **Números num documento de estado são lidos do output real**, não copiados
+  de mensagens de commit. Uma mensagem de commit com "26 testes" não prova
+  que o pytest correu 26.

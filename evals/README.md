@@ -36,8 +36,11 @@ reference is a bug that propagates into every metric downstream.
 3. **PT-PT only.** Reject any clip whose speaker uses PT-BR syntax,
    vocabulary, or prosody as the primary register. Code-switching into
    English inside a PT-PT clip is fine (see §1.5); mixed PT-PT/PT-BR is not.
-4. **One annotator per clip, one reviewer per batch.** If two annotators
-   disagree on a segment, the clip is excluded from the golden set and
+4. **Single-pass annotation.** Annotation is done in one pass; a random
+   20 % subsample is re-reviewed after ≥24 h with fresh eyes. The
+   `reviewer` field uses the same handle as `annotator`; the ≥24 h gap
+   is the control. If two separate people annotate the same clip and
+   disagree on any segment, the clip is excluded from the golden set and
    moved to `evals/scratch/` for calibration.
 
 ### 1.2 Disfluencies
@@ -160,3 +163,74 @@ validator lives in `evals/validate.py` once real cases exist.
     { "id": "t-001", "type": "transcription", "...": "..." }
   ]
 }
+```
+
+### 2.2 `transcription`
+
+Ground truth for WER.
+
+```json
+{
+  "id": "t-001",
+  "type": "transcription",
+  "audio_id": "rt-2025-03-14-joao-silva",
+  "language": "pt-PT",
+  "duration_s": 184.5,
+  "segments": [
+    { "start": 0.0, "end": 3.2, "text": "Bom dia, estamos aqui hoje com o João Silva." }
+  ],
+  "annotator": "am",
+  "notes": "Speaker uses Porto register; two [INAUDÍVEL] spans at 41s and 88s."
+}
+```
+
+- `segments[].text` follows §1.1–1.7 **verbatim**.
+- `duration_s` is the audio duration, not the last segment end.
+
+### 2.3 `extraction`
+
+Ground truth for the semantic extractor. The `expected` block is a
+**subset** of `ExtractedData` (`src/radio_transforma/models/extraction.py`)
+— it contains only the fields the eval checks (topics, entities, quotes),
+not the envelope fields (`transcript_id`, `model`, `sentiment`,
+`created_at`). Field names, types, and enum values must match the Pydantic
+contract exactly; if this document and the model diverge, **the model wins**.
+
+```json
+{
+  "id": "x-001",
+  "type": "extraction",
+  "transcript_id": "t-001",
+  "expected": {
+    "topics": [
+      { "name": "fado", "confidence": 0.9 }
+    ],
+    "entities": [
+      { "name": "João Silva", "type": "person", "mentions": 3 }
+    ],
+    "quotes": [
+      { "text": "…", "position": "middle", "start": 12.0, "end": 34.5 }
+    ]
+  },
+  "annotator": "am"
+}
+```
+
+- `expected.topics[].name` — at least one, at most five, ordered by salience.
+- `expected.topics[].confidence` — float in [0, 1]; defaults to 1.0.
+- `expected.entities[].type` — closed vocabulary `EntityType`:
+  `person`, `location`, `organization`, `policy`, `geopolitical_entity`,
+  `event`, `other`. Values are **lowercase**. Adding a new type is a
+  schema change, not a case change.
+- `expected.entities[].mentions` — **count** of mentions in the transcript,
+  not a list of positions. Integer ≥ 1; defaults to 1.
+- `expected.quotes[].text` — verbatim, per §1.1–1.7.
+- `expected.quotes[].position` — one of `"start"`, `"middle"`, `"end"`;
+  defaults to `"middle"`.
+- `expected.quotes[].start` / `end` — **seconds** (float), not segment
+  indices. Both optional. `start ≥ 0`, `end > 0`.
+
+**Known gap (Phase 2):** `Quote` has no `speaker` field, so the eval
+cannot currently distinguish who said a quote. This is a deliberate V0.1
+omission per the model docstring; revisit when the agent eval requires
+attribution.
